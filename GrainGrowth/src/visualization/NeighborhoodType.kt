@@ -1,6 +1,6 @@
 package visualization
 
-enum class GrowthType {
+enum class NeighborhoodType {
 
     VonNeumann,
     Moore,
@@ -8,5 +8,5 @@ enum class GrowthType {
     Hexagonal_Right,
     Hexagonal_Left,
     Hexagonal_Random,
-    RadiusWithCenterOfGravity
+
 }

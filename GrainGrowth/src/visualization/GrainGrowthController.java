@@ -6,86 +6,185 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.text.Text;
 
 import java.net.URL;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Random;
+import java.util.ResourceBundle;
+import java.util.Set;
 
 public class GrainGrowthController implements Initializable {
 
-    @FXML private ComboBox<NucleationType> nucleationTypes;
-    @FXML private Button startButton;
-    @FXML private TextField nSize;
-    @FXML private TextField mSize;
-    @FXML private TextField homogeneousRows;
-    @FXML private TextField homogeneousColumns;
-    @FXML private Button stopButton;
-    @FXML private TextField numberOfGrains;
-    @FXML private ComboBox<BoundaryCondition> boundaryConditions;
-    @FXML private GridPane visualizationGridPane;
-    @FXML private ComboBox<GrowthType> growthTypes;
-    @FXML private Button resumeButton;
-    @FXML private Text errorText;
+    @FXML
+    public TextField iterationsMC;
+    @FXML
+    public TextField ktMC;
+    @FXML
+    private ComboBox<NucleationType> nucleationTypes;
+    @FXML
+    private Button startButton;
+    @FXML
+    private TextField nSize;
+    @FXML
+    private TextField mSize;
+    @FXML
+    private TextField homogeneousRows;
+    @FXML
+    private TextField homogeneousColumns;
+    @FXML
+    private Button stopButton;
+    @FXML
+    private TextField numberOfGrains;
+    @FXML
+    private ComboBox<BoundaryCondition> boundaryConditions;
+    @FXML
+    private GridPane visualizationGridPane;
+    @FXML
+    private ComboBox<NeighborhoodType> growthTypes;
+    @FXML
+    private Button resumeButton;
+    @FXML
+    private Text errorText;
+
+    @FXML
+    private Button monteCarlo;
+    @FXML
+    private ComboBox<NeighborhoodType> neighborhoodMC;
+    @FXML
+    private ComboBox<VisualizationType> switchVisualization;
 
     private GrainGrowth grainGrowth;
-
+    private VisualizationType visualizationType = VisualizationType.Microstructure;
     private String[] grainColors;
 
-    private List<StackPane> squares;
+    private StackPane[][] squares;
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
-        grainGrowth = new GrainGrowth(60, 40);
+        grainGrowth = new GrainGrowth(60, 40, errorText);
         boundaryConditions.setItems(FXCollections.observableArrayList(BoundaryCondition.values()));
         nucleationTypes.setItems(FXCollections.observableArrayList(NucleationType.values()));
-        growthTypes.setItems(FXCollections.observableArrayList(GrowthType.values()));
+        growthTypes.setItems(FXCollections.observableArrayList(NeighborhoodType.values()));
+        neighborhoodMC.setItems(FXCollections.observableArrayList(NeighborhoodType.Moore, NeighborhoodType.VonNeumann));
+        switchVisualization.setItems(FXCollections.observableArrayList(VisualizationType.values()));
         stopButton.setOnAction(e -> grainGrowth.stopGame());
+        switchVisualization.setOnAction(e->{
+            System.out.println("now");
+            if(grainGrowth.isPlayable()){
+                grainGrowth.stopGame();
+                visualizationType = switchVisualization.getValue();
+                changeColorsOnBoard();
+            }
+        });
+        monteCarlo.setOnAction(e -> {
+            try {
+                int kt = Integer.parseInt(ktMC.getText());
+                int iterations = Integer.parseInt(iterationsMC.getText());
+                NeighborhoodType neighborhoodType = neighborhoodMC.getValue();
+                if (neighborhoodType != null)
+                    grainGrowth.monteCarlo(neighborhoodType, kt, iterations);
+                else
+                    printError("select neighborhood for MC");
+            } catch (Exception exception) {
+                printError("wrong input for MC");
+            }
+        });
         resumeButton.setOnAction(e -> grainGrowth.playGame());
         startButton.setOnAction(e -> {
             errorText.setText("");
-            int n =0, m=0, homogeneousRows =0 , homogeneousColumns =0, numOfGrains=0, radius = 5;
+            int n, m, homogeneousRows = 0, homogeneousColumns = 0, numOfGrains;
+            double radiusNucleation = 2.0, radiusNeighborhood = 2.0;
             BoundaryCondition boundaryCondition = boundaryConditions.getValue();
             NucleationType nucleationType = nucleationTypes.getValue();
-            GrowthType growthType = growthTypes.getValue();
+            NeighborhoodType neighborhoodType = growthTypes.getValue();
             try {
                 n = Integer.parseInt(nSize.getText());
                 m = Integer.parseInt(mSize.getText());
+                squares = new StackPane[n][m];
                 if (nucleationType.equals(NucleationType.Homogeneous)) {
                     homogeneousRows = Integer.parseInt(this.homogeneousRows.getText());
                     homogeneousColumns = Integer.parseInt(this.homogeneousColumns.getText());
-                    numOfGrains = homogeneousColumns*homogeneousRows;
-                }else
+                    numOfGrains = homogeneousColumns * homogeneousRows;
+                }  else
                     numOfGrains = Integer.parseInt(numberOfGrains.getText());
-                if(validateInputs(boundaryCondition,nucleationType,growthType,
-                        n,m,homogeneousColumns,homogeneousRows,numOfGrains)) {
+
+                if (validateInputs(boundaryCondition, nucleationType, neighborhoodType,
+                        n, m, homogeneousColumns, homogeneousRows, numOfGrains)) {
                     makeColorsForGrains(numOfGrains);
                     grainGrowth.setInstance(numOfGrains, boundaryCondition,
-                            nucleationType, growthType,
-                            homogeneousRows, homogeneousColumns, radius);
+                            nucleationType, neighborhoodType,
+                            homogeneousRows, homogeneousColumns, radiusNucleation, radiusNeighborhood);
                     resizeVisualization(n, m, numOfGrains);
                     grainGrowth.doNucleationType();
                     grainGrowth.setPlayable();
                 }
-            }catch (NumberFormatException exception){printError("Wrong input data");};
+            } catch (NumberFormatException | NullPointerException exception) {
+                printError("Wrong input data");
+            }
 
 
         });
     }
 
+    private void changeColorsOnBoard() {
+        switch(visualizationType){
+            case Microstructure:
+                colorsMicrostructure();
+                break;
+            case Energy:
+                colorsEnergy();
+                break;
+            case DensityOfDislocation:
+                colorsDensity();
+                break;
+                
+        }
+    }
+
+    private void colorsDensity() {
+        Cell[][] cells = grainGrowth.getCells();
+        for(int i = 0; i < cells.length; i++)
+            for(int j = 0; j < cells[0].length;j++)
+                updateColorDensity(squares[i][j],cells[i][j].isCrystalized(), cells[i][j].getDensity());
+    }
+
+
+
+    private void colorsMicrostructure() {
+        Cell[][] cells = grainGrowth.getCells();
+        for(int i = 0; i < cells.length; i++){
+            for(int j = 0; j < cells[0].length; j++){
+                updateColor(squares[i][j],cells[i][j].getGrainNumber());
+            }
+        }
+        
+    }
+
+    private void colorsEnergy() {
+        Cell[][] cells = grainGrowth.getCells();
+        for(int i = 0; i < cells.length; i++){
+            for(int j = 0; j < cells[0].length; j++){
+                updateColorEnergy(squares[i][j],cells[i][j].isChanged());
+            }
+        }
+    }
+
     private boolean validateInputs(BoundaryCondition boundaryCondition, NucleationType nucleationType,
-                                   GrowthType growthType, int n, int m, int homogeneousColumns,
+                                   NeighborhoodType neighborhoodType, int n, int m, int homogeneousColumns,
                                    int homogeneousRows, int numOfGrains) {
-        if(boundaryCondition == null || nucleationType == null || growthType == null){
+        if (boundaryCondition == null || nucleationType == null || neighborhoodType == null) {
             printError("select every option");
             return false;
-        }else if(n <= 0 || m <= 0){
+        } else if (n <= 0 || m <= 0) {
             printError("wrong grid size");
             return false;
-        }else if(homogeneousColumns > m || homogeneousRows > n || homogeneousColumns*homogeneousRows > n*m){
+        } else if (homogeneousColumns > m || homogeneousRows > n || homogeneousColumns * homogeneousRows > n * m) {
             printError("wrong homogeneous options");
             return false;
-        }else if( numOfGrains<=0 || numOfGrains > n*m){
+        } else if (numOfGrains <= 0 || numOfGrains > n * m) {
             printError("wrong number of grains");
             return false;
         }
@@ -100,56 +199,57 @@ public class GrainGrowthController implements Initializable {
         Random random = new Random();
         Set<String> colorsSet = new LinkedHashSet<>();
         colorsSet.add("rgb(255,255,255)");
-        for(int i = 1; i <= numberOfGrains; i++){
+        for (int i = 1; i <= numberOfGrains; i++) {
             int red = random.nextInt(256);
             int green = random.nextInt(256);
             int blue = random.nextInt(256);
-            String value = "rgb("+red+","+green+","+blue+")";
-            if(!colorsSet.contains(value))
+            String value = "rgb(" + red + "," + green + "," + blue + ")";
+            if (!colorsSet.contains(value))
                 colorsSet.add(value);
             else
                 i--;
         }
-        grainColors = colorsSet.toArray(new String[0]);
+        grainColors = colorsSet.stream().toArray(String[]::new);
 
     }
 
     public void resizeVisualization(int n, int m, int numOfGrains) {
-        grainGrowth.resizeGrid(n,m);
+        grainGrowth.resizeGrid(n, m);
         Grid grid = grainGrowth.getGrid();
         cleanVisualizationPane();
-        int num = numOfGrains;
-        double width = visualizationGridPane.getWidth()/(double)m;
-        double height = visualizationGridPane.getHeight()/(double)n;
-
-        for (int i = 0; i < m; i++) {
-            ColumnConstraints colConst = new ColumnConstraints();
-            colConst.setHgrow(Priority.ALWAYS);
-            colConst.setPercentWidth(width);
-            visualizationGridPane.getColumnConstraints().add(colConst);
-        }
-        for (int i = 0; i < n; i++) {
-            RowConstraints rowConst = new RowConstraints();
-            rowConst.setVgrow(Priority.ALWAYS);
-            rowConst.setPercentHeight(height);
-            visualizationGridPane.getRowConstraints().add(rowConst);
-        }
+        System.out.println(visualizationGridPane.getWidth());
+        System.out.println(visualizationGridPane.getHeight());
+        double width = visualizationGridPane.getWidth() / (double) m;
+        double height = visualizationGridPane.getHeight() / (double) n;
+        double size = (int)(width > height ? height : width);
         for (int i = 0; i < n; i++)
             for (int j = 0; j < m; j++) {
                 StackPane square = new StackPane();
+                squares[i][j] = square;
+                square.setMinSize(size, size);
                 makeBorderOnSquare(square);
                 final int ii = i;
                 final int jj = j;
-                square.setOnMouseClicked((e)-> {
-                    if(grid.setColorIdOnClick(ii,jj))
-                        grid.updateCell(ii,jj);
+                square.setOnMouseClicked((e) -> {
+                    if (grid.setColorIdOnClick(ii, jj))
+                        grid.updateCell(ii, jj);
                 });
-                Objects.requireNonNull(grid.getCell(i, j)).aliveProperty().addListener((e) ->{
-                        updateColor(square, Objects.requireNonNull(grid.getCell(ii, jj)).getGrainNumber());
-                        });
+                grid.getCell(i, j).aliveProperty().addListener((e) -> {
+                    if(visualizationType.equals(VisualizationType.Microstructure))
+                        updateColor(square, grid.getCell(ii, jj).getGrainNumber());
+                    else
+                        updateColorEnergy(square, grid.getCell(ii,jj).isChanged());
+                });
                 visualizationGridPane.add(square, j, i);
             }
 
+    }
+
+    private void updateColorEnergy(StackPane square, boolean isChanged) {
+        if(isChanged)
+            square.setStyle("-fx-background-color: rgb(0,0,0)");
+        else
+            square.setStyle("-fx-background-color: rgb(255,255,255)");
     }
 
     private void cleanVisualizationPane() {
@@ -161,18 +261,22 @@ public class GrainGrowthController implements Initializable {
         while (visualizationGridPane.getColumnConstraints().size() > 0) {
             visualizationGridPane.getColumnConstraints().remove(0);
         }
-
-
+    }
+    private void updateColorDensity(StackPane square, boolean crystalized, double density) {
+        if(crystalized)
+            square.setStyle("-fx-background-color: rgb(0,205,255)");
+        else
+            square.setStyle("-fx-background-color: rgb(0,255,255)");
     }
 
-        private void updateColor(StackPane square, int numberOfGrain) {
-            String colorRGB = grainColors[numberOfGrain];
-            square.setStyle("-fx-background-color: "+colorRGB);
-
-        }
-        private void makeBorderOnSquare(StackPane square){
-            square.setStyle("-fx-background-color: white;");
-        }
-
+    private void updateColor(StackPane square, int numberOfGrain) {
+        String colorRGB = grainColors[numberOfGrain];
+        square.setStyle("-fx-background-color: " + colorRGB);
     }
+
+    private void makeBorderOnSquare(StackPane square) {
+        square.setStyle("-fx-background-color: white;");
+    }
+
+}
 

@@ -5,9 +5,10 @@ import javafx.animation.KeyFrame
 import javafx.animation.Timeline
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
+import javafx.scene.text.Text
 import javafx.util.Duration
 
-class GrainGrowth(n: Int, m: Int) {
+class GrainGrowth(n: Int, m: Int, private val errorText: Text) {
 
     val grid: Grid
     private var timeline: Timeline? = null
@@ -15,13 +16,16 @@ class GrainGrowth(n: Int, m: Int) {
     private var numberOfGrains: Int = 0
     private var homogeneousRows: Int = 0
     private var homogeneousColumns: Int = 0
-    private var playable: Boolean = false
+    var isPlayable: Boolean = false
+        private set
     private val radius: Int = 0
+    private var finished = false
+    val cells: Array<Array<Cell>>
+        get() = grid.cells
 
     init {
         grid = Grid(n, m)
         buildGrid()
-        setTimeline()
     }
 
     private fun setTimeline() {
@@ -31,12 +35,30 @@ class GrainGrowth(n: Int, m: Int) {
         timeline!!.cycleCount = Animation.INDEFINITE
     }
 
+    private fun setTimelineMonteCarlo(kt: Int, iterations: Int) {
+        val eventHandler:EventHandler<ActionEvent> = EventHandler{ nextMonteCarlo(kt) }
+        val keyFrame = KeyFrame(Duration(1000.0), eventHandler)
+        timeline = Timeline(keyFrame)
+        timeline!!.cycleCount = iterations
+        timeline!!.play()
+    }
+
+    private fun nextMonteCarlo(kt: Int) {
+        grid.nextMonteCarlo()
+    }
+
     fun resizeGrid(n: Int, m: Int) {
         grid.resize(n, m)
     }
 
     private operator fun next() {
-        grid.nextGeneration()
+        if (!finished)
+            finished = grid.nextGeneration()
+        else {
+            timeline!!.stop()
+            println("end")
+        }
+
     }
 
     private fun buildGrid() {
@@ -44,24 +66,29 @@ class GrainGrowth(n: Int, m: Int) {
     }
 
     fun playGame() {
-        if (playable) timeline!!.play()
+        if (isPlayable) timeline!!.play()
     }
 
     fun stopGame() {
-        if (playable) timeline!!.stop()
+        if (isPlayable) timeline!!.stop()
     }
 
     fun setInstance(numberOfGrains: Int, boundaryCondition: BoundaryCondition,
-                    nucleationType: NucleationType, growthType: GrowthType,
-                    homogeneousRows: Int, homogeneousColumns: Int, radius: Int) {
+                    nucleationType: NucleationType, neighborhoodType: NeighborhoodType,
+                    homogeneousRows: Int, homogeneousColumns: Int, radiusNucleation: Double, radiusNeighborhood: Double) {
         stopGame()
+        setTimeline()
+        finished = false
         this.numberOfGrains = numberOfGrains
         this.nucleationType = nucleationType
         this.homogeneousRows = homogeneousRows
         this.homogeneousColumns = homogeneousColumns
-        grid.setRadius(radius)
+        grid.setNumberOfGrains(numberOfGrains)
+        grid.setRadiusNucleation(radiusNucleation)
+        grid.setRadiusNeighborhood(radiusNeighborhood)
         grid.setBoundaryCondition(boundaryCondition)
-        grid.setGrowthType(growthType)
+        grid.setNeighborhoodType(neighborhoodType)
+        grid.setNucleationType(nucleationType)
     }
 
     fun doNucleationType() {
@@ -69,11 +96,19 @@ class GrainGrowth(n: Int, m: Int) {
             NucleationType.Custom -> grid.setGrainsCustom(numberOfGrains)
             NucleationType.Homogeneous -> grid.setGrainsHomogeneous(homogeneousRows, homogeneousColumns)
             NucleationType.Random -> grid.setGrainsRandom(numberOfGrains)
-            NucleationType.WithRadius -> grid.setGrainsWithRadius(numberOfGrains)
+
         }
     }
 
     fun setPlayable() {
-        this.playable = true
+        this.isPlayable = true
+    }
+
+    fun monteCarlo(neighborhoodType: NeighborhoodType, kt: Int, iterations: Int) {
+        if (finished) {
+            println("started MonteCarlo")
+            grid.setNeighborhoodType(neighborhoodType)
+            setTimelineMonteCarlo(kt, iterations)
+        }
     }
 }

@@ -4,6 +4,5 @@ enum class NucleationType {
 
     Homogeneous,
     Random,
-    WithRadius,
     Custom
 }

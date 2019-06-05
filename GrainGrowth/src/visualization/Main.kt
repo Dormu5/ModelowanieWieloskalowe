@@ -11,8 +11,7 @@ class Main : Application() {
     @Throws(Exception::class)
     override fun start(primaryStage: Stage) {
         val root = FXMLLoader.load<Parent>(javaClass.getResource("sample.fxml"))
-        primaryStage.title = "GrainGrowth"
-        primaryStage.scene = Scene(root, 1200.0, 600.0)
+        primaryStage.scene = Scene(root, 1200.0, 700.0)
         primaryStage.sizeToScene()
         primaryStage.isResizable = false
         primaryStage.show()
