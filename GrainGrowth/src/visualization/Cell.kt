@@ -34,6 +34,13 @@ class Cell(centerOfGravityX: Double, centerOfGravityY: Double) {
         isAlive = !isAlive
     }
 
+    fun setCenterOfGravity(x: Double, y: Double) {
+        this.centerOfGravityX = x
+        this.centerOfGravityY = y
+    }
 
+    fun addDensity(density: Double) {
+        this.density += density
+    }
 }
 

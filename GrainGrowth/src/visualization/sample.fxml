@@ -13,81 +13,76 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="706.0" prefWidth="931.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="visualization.GrainGrowthController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="655.0" prefWidth="837.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="visualization.GrainGrowthController">
     <right>
-        <AnchorPane prefHeight="447.0" prefWidth="241.0" BorderPane.alignment="CENTER">
+        <AnchorPane prefHeight="629.0" prefWidth="237.0" BorderPane.alignment="CENTER">
             <children>
-                <TextField fx:id="nSize" layoutX="43.0" layoutY="60.0" prefHeight="25.0" prefWidth="75.0" />
-                <TextField fx:id="mSize" layoutX="155.0" layoutY="60.0" prefHeight="25.0" prefWidth="78.0" />
-                <ComboBox fx:id="nucleationTypes" layoutX="5.0" layoutY="123.0" prefHeight="25.0" prefWidth="227.0" />
-                <TextField fx:id="homogeneousRows" layoutX="48.0" layoutY="195.0" prefHeight="25.0" prefWidth="72.0" />
-                <TextField fx:id="homogeneousColumns" layoutX="156.0" layoutY="195.0" prefHeight="25.0" prefWidth="74.0" />
-                <ComboBox fx:id="boundaryConditions" layoutX="4.0" layoutY="264.0" prefHeight="25.0" prefWidth="229.0" />
-                <ComboBox fx:id="growthTypes" layoutX="2.0" layoutY="328.0" prefHeight="25.0" prefWidth="234.0" />
-                <TextField fx:id="numberOfGrains" layoutX="13.0" layoutY="405.0" prefHeight="25.0" prefWidth="93.0" />
-                <Button fx:id="startButton" layoutX="121.0" layoutY="369.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="117.0" text="PREPARE" />
-                <Button fx:id="resumeButton" layoutX="121.0" layoutY="405.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="117.0" text="START" />
-                <Button fx:id="stopButton" layoutX="120.0" layoutY="440.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="117.0" text="STOP" />
-                <ComboBox fx:id="neighborhoodMC" layoutX="3.0" layoutY="514.0" prefHeight="25.0" prefWidth="235.0" />
-                <TextField fx:id="iterationsMC" layoutX="4.0" layoutY="587.0" prefHeight="25.0" prefWidth="112.0" />
-                <TextField fx:id="ktMC" layoutX="120.0" layoutY="587.0" prefHeight="25.0" prefWidth="114.0" />
-                <Button fx:id="monteCarlo" layoutX="120.0" layoutY="629.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="114.0" text="Monte Carlo" />
-                <ComboBox fx:id="switchVisualization" layoutX="4.0" layoutY="629.0" prefHeight="25.0" prefWidth="111.0" />
+                <TextField fx:id="nSize" layoutX="46.0" layoutY="60.0" prefHeight="25.0" prefWidth="67.0" />
+                <TextField fx:id="mSize" layoutX="146.0" layoutY="60.0" prefHeight="25.0" prefWidth="68.0" />
+                <ComboBox fx:id="nucleationTypes" layoutX="17.0" layoutY="136.0" prefHeight="25.0" prefWidth="201.0" />
+                <TextField fx:id="homogeneousRows" layoutX="51.0" layoutY="208.0" prefHeight="25.0" prefWidth="62.0" />
+                <TextField fx:id="homogeneousColumns" layoutX="148.0" layoutY="208.0" prefHeight="25.0" prefWidth="67.0" />
+                <ComboBox fx:id="boundaryConditions" layoutX="19.0" layoutY="286.0" prefWidth="200.0" />
+                <ComboBox fx:id="growthTypes" layoutX="19.0" layoutY="347.0" prefWidth="200.0" />
+                <TextField fx:id="numberOfGrains" layoutX="18.0" layoutY="407.0" prefHeight="25.0" prefWidth="196.0" />
+                <Button fx:id="startButton" layoutX="20.0" layoutY="445.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="61.0" text="PEPARE" />
+                <Button fx:id="resumeButton" layoutX="83.0" layoutY="445.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="62.0" text="START" />
+                <Button fx:id="stopButton" layoutX="149.0" layoutY="445.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="62.0" text="STOP" />
+                <ComboBox fx:id="neighborhoodMC" layoutX="14.0" layoutY="506.0" prefWidth="200.0" />
+                <TextField fx:id="iterationsMC" layoutX="73.0" layoutY="538.0" prefHeight="25.0" prefWidth="49.0" />
+                <TextField fx:id="ktMC" layoutX="164.0" layoutY="538.0" prefHeight="25.0" prefWidth="51.0" />
+                <Button fx:id="monteCarlo" layoutX="13.0" layoutY="615.0" mnemonicParsing="false" text="Monte Carlo" />
+                <Button fx:id="drx" layoutX="109.0" layoutY="615.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="104.0" text="DRX" />
+                <ComboBox fx:id="switchVisualization" layoutX="16.0" layoutY="576.0" prefHeight="25.0" prefWidth="199.0" />
 
-                <Label layoutX="62.0" layoutY="99.0" text="Nucleation types">
+                <Label layoutX="73.0" layoutY="103.0" text="Nucleation types">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="84.0" layoutY="35.0" prefHeight="17.0" prefWidth="51.0" text="Grid Size">
+                <Label layoutX="92.0" layoutY="33.0" text="Grid size ">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="63.0" layoutY="247.0" text="Boundary conditions">
+                <Label layoutX="59.0" layoutY="256.0" text="Boundary conditions">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="12.0" layoutY="373.0" text="Number of grains">
+                <Label layoutX="62.0" layoutY="380.0" text="Number of grains">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="86.0" layoutY="298.0" text="Growth Type">
+                <Label layoutX="78.0" layoutY="319.0" text="Growth Type">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="52.0" layoutY="169.0" text="Homogeneous options">
+                <Label layoutX="53.0" layoutY="175.0" text="Homogeneous options">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="38.0" layoutY="488.0" text="Neighborhood Monte Carlo">
-               <font>
-                  <Font name="Arimo Bold" size="12.0" />
-               </font></Label>
-                <Label layoutX="17.0" layoutY="555.0" text="Iterations">
+                <Label layoutX="54.0" layoutY="478.0" text="Monte Carlo Variables">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font></Label>
-                <Label layoutX="148.0" layoutY="555.0" text="KT">
-               <font>
-                  <Font name="System Bold" size="12.0" />
-               </font></Label>
+                <Label layoutX="12.0" layoutY="542.0" text="Iterations" />
+                <Label layoutX="128.0" layoutY="542.0" text="KT" />
 
-                <Text fx:id="errorText" fill="RED" layoutX="12.0" layoutY="493.0" strokeType="OUTSIDE" strokeWidth="0.0" wrappingWidth="176.80340576171875" />
-            <Label layoutX="5.0" layoutY="64.0" prefHeight="17.0" prefWidth="34.0" text="Rows">
+                <Text fx:id="errorText" fill="RED" layoutX="17.0" layoutY="475.0" strokeType="OUTSIDE" strokeWidth="0.0" wrappingWidth="176.80340576171875" />
+            <Label layoutX="29.0" layoutY="64.0" text="Y">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font>
             </Label>
-            <Label layoutX="123.0" layoutY="64.0" text="Col">
+            <Label layoutX="125.0" layoutY="64.0" text="X">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font>
             </Label>
-            <Label layoutX="123.0" layoutY="199.0" text="Col">
+            <Label layoutX="29.0" layoutY="212.0" text="Y">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font>
             </Label>
-            <Label layoutX="8.0" layoutY="199.0" prefHeight="17.0" prefWidth="34.0" text="Rows">
+            <Label layoutX="125.0" layoutY="212.0" text="X">
                <font>
                   <Font name="System Bold" size="12.0" />
                </font>
@@ -97,7 +92,7 @@
         </AnchorPane>
     </right>
    <center>
-        <GridPane fx:id="visualizationGridPane" gridLinesVisible="true" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="450.0" prefWidth="750.0" BorderPane.alignment="CENTER">
+        <GridPane fx:id="visualizationGridPane" gridLinesVisible="true" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="628.0" prefWidth="578.0" BorderPane.alignment="CENTER">
             <columnConstraints>
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />

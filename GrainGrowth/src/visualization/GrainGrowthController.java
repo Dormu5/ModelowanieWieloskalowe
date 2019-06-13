@@ -48,9 +48,10 @@ public class GrainGrowthController implements Initializable {
     private Button resumeButton;
     @FXML
     private Text errorText;
-
     @FXML
     private Button monteCarlo;
+    @FXML
+    private Button drx;
     @FXML
     private ComboBox<NeighborhoodType> neighborhoodMC;
     @FXML
@@ -81,15 +82,24 @@ public class GrainGrowthController implements Initializable {
         });
         monteCarlo.setOnAction(e -> {
             try {
-                int kt = Integer.parseInt(ktMC.getText());
+                double kt = Double.parseDouble(ktMC.getText());
                 int iterations = Integer.parseInt(iterationsMC.getText());
                 NeighborhoodType neighborhoodType = neighborhoodMC.getValue();
-                if (neighborhoodType != null)
+                if (neighborhoodType != null && kt <= 6 && kt >= 0.1)
                     grainGrowth.monteCarlo(neighborhoodType, kt, iterations);
                 else
                     printError("select neighborhood for MC");
             } catch (Exception exception) {
                 printError("wrong input for MC");
+            }
+        });
+        drx.setOnAction(e->{
+            try{
+                int iterations = Integer.parseInt(iterationsMC.getText());
+                printError("");
+                grainGrowth.drx(iterations);
+            }catch (Exception exception){
+                printError("wrong input for DRX");
             }
         });
         resumeButton.setOnAction(e -> grainGrowth.playGame());
@@ -110,9 +120,8 @@ public class GrainGrowthController implements Initializable {
                     numOfGrains = homogeneousColumns * homogeneousRows;
                 }  else
                     numOfGrains = Integer.parseInt(numberOfGrains.getText());
-
                 if (validateInputs(boundaryCondition, nucleationType, neighborhoodType,
-                        n, m, homogeneousColumns, homogeneousRows, numOfGrains)) {
+                        n, m, homogeneousColumns, homogeneousRows, numOfGrains, radiusNucleation, radiusNeighborhood)) {
                     makeColorsForGrains(numOfGrains);
                     grainGrowth.setInstance(numOfGrains, boundaryCondition,
                             nucleationType, neighborhoodType,
@@ -124,6 +133,7 @@ public class GrainGrowthController implements Initializable {
             } catch (NumberFormatException | NullPointerException exception) {
                 printError("Wrong input data");
             }
+            ;
 
 
         });
@@ -148,7 +158,7 @@ public class GrainGrowthController implements Initializable {
         Cell[][] cells = grainGrowth.getCells();
         for(int i = 0; i < cells.length; i++)
             for(int j = 0; j < cells[0].length;j++)
-                updateColorDensity(squares[i][j],cells[i][j].isCrystalized(), cells[i][j].getDensity());
+                updateColorDensity(squares[i][j],cells[i][j].isCrystalized());
     }
 
 
@@ -157,7 +167,10 @@ public class GrainGrowthController implements Initializable {
         Cell[][] cells = grainGrowth.getCells();
         for(int i = 0; i < cells.length; i++){
             for(int j = 0; j < cells[0].length; j++){
-                updateColor(squares[i][j],cells[i][j].getGrainNumber());
+                if(cells[i][j].isCrystalized()) {
+                    updateColor(squares[i][j], "rgb(255,0,0)");
+                }
+                else updateColor(squares[i][j],grainColors[cells[i][j].getGrainNumber()]);
             }
         }
         
@@ -174,7 +187,7 @@ public class GrainGrowthController implements Initializable {
 
     private boolean validateInputs(BoundaryCondition boundaryCondition, NucleationType nucleationType,
                                    NeighborhoodType neighborhoodType, int n, int m, int homogeneousColumns,
-                                   int homogeneousRows, int numOfGrains) {
+                                   int homogeneousRows, int numOfGrains, double radiusNucleation, double radiusNeighborhood) {
         if (boundaryCondition == null || nucleationType == null || neighborhoodType == null) {
             printError("select every option");
             return false;
@@ -186,6 +199,10 @@ public class GrainGrowthController implements Initializable {
             return false;
         } else if (numOfGrains <= 0 || numOfGrains > n * m) {
             printError("wrong number of grains");
+            return false;
+        } else if (radiusNeighborhood <= 1 || radiusNucleation <= 1 || radiusNucleation >= n || radiusNucleation >=m
+        || radiusNeighborhood >= n || radiusNucleation >=m) {
+            printError("wrong radius");
             return false;
         }
         return true;
@@ -235,8 +252,13 @@ public class GrainGrowthController implements Initializable {
                         grid.updateCell(ii, jj);
                 });
                 grid.getCell(i, j).aliveProperty().addListener((e) -> {
-                    if(visualizationType.equals(VisualizationType.Microstructure))
-                        updateColor(square, grid.getCell(ii, jj).getGrainNumber());
+                    if(visualizationType.equals(VisualizationType.Microstructure) && grid.getCell(ii,jj).isCrystalized()) {
+                        updateColor(square, "rgb(255,0,0)");
+                    }
+                    else if(visualizationType.equals(VisualizationType.Microstructure))
+                        updateColor(square, grainColors[grid.getCell(ii, jj).getGrainNumber()]);
+                    else if(visualizationType.equals(VisualizationType.DensityOfDislocation))
+                        updateColorDensity(square, grid.getCell(ii,jj).isCrystalized());
                     else
                         updateColorEnergy(square, grid.getCell(ii,jj).isChanged());
                 });
@@ -262,15 +284,14 @@ public class GrainGrowthController implements Initializable {
             visualizationGridPane.getColumnConstraints().remove(0);
         }
     }
-    private void updateColorDensity(StackPane square, boolean crystalized, double density) {
+    private void updateColorDensity(StackPane square, boolean crystalized) {
         if(crystalized)
-            square.setStyle("-fx-background-color: rgb(0,205,255)");
+            square.setStyle("-fx-background-color: rgb(255,0,0)");
         else
-            square.setStyle("-fx-background-color: rgb(0,255,255)");
+            square.setStyle("-fx-background-color: rgb(255,255,255)");
     }
 
-    private void updateColor(StackPane square, int numberOfGrain) {
-        String colorRGB = grainColors[numberOfGrain];
+    private void updateColor(StackPane square, String colorRGB) {
         square.setStyle("-fx-background-color: " + colorRGB);
     }
 

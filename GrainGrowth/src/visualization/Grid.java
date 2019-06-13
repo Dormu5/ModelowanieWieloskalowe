@@ -3,6 +3,8 @@ package visualization;
 
 import javafx.scene.text.Text;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -10,6 +12,7 @@ import java.util.stream.IntStream;
 public class Grid {
 
     private Cell[][] cells;
+    private double[] dislocation;
     private int numberOfRows;
     private int numberOfColumns;
     private BoundaryCondition boundaryCondition;
@@ -17,19 +20,19 @@ public class Grid {
 
 
     private NucleationType nucleationType;
-    private int counterGrain;
-    private int numberOfGrains;
+    int counterGrain = 1;
+    int numberOfGrains = 0;
     private boolean[][] oldState;
     private Random generator;
     private double radiusNucleation;
     private double radiusNeighborhood;
     private boolean noChanges = true;
-
+    private int drxIteration = 1;
+    private List<Cell> borderCells;
     public Grid(int n, int m) {
         generator = new Random();
         resize(n, m);
-        counterGrain = 1;
-        numberOfGrains = 0;
+        borderCells = new LinkedList<>();
     }
 
     void initializeCells() {
@@ -37,10 +40,10 @@ public class Grid {
         oldState = new boolean[numberOfRows][numberOfColumns];
         int id = 1;
         for (int i = 0; i < numberOfRows; i++)
-        for (int j = 0; j < numberOfColumns; j++) {
-            cells[i][j] = new Cell(generator.nextDouble() + i, generator.nextDouble() + j);
-            cells[i][j].setId(id++);
-        }
+            for (int j = 0; j < numberOfColumns; j++) {
+                cells[i][j] = new Cell(generator.nextDouble() + i, generator.nextDouble() + j);
+                cells[i][j].setId(id++);
+            }
     }
 
     public void updateCell(int i, int j) {
@@ -56,11 +59,11 @@ public class Grid {
     private void goToNextState(boolean[][] nextState) {
         for (int i = 0; i < getNumberOfRows(); i++) {
             for (int j = 0; j < getNumberOfColumns(); j++) {
-            if (oldState[i][j] != nextState[i][j] && nextState[i][j]) {
-                noChanges = false;
-                getCell(i, j).setAlive(true);
+                if (oldState[i][j] != nextState[i][j] && nextState[i][j] == true) {
+                    noChanges = false;
+                    getCell(i, j).setAlive(true);
+                }
             }
-        }
         }
         oldState = nextState;
     }
@@ -70,24 +73,24 @@ public class Grid {
 
         IntStream.range(0, getNumberOfRows()).parallel().forEach(i -> {
             IntStream.range(0, getNumberOfColumns()).parallel().forEach(j -> {
-            Cell cell = getCell(i, j);
-            if (!cell.isAlive()) {
-                int nextGrainType = checkNextGrainType(i, j);
-                if (nextGrainType != -1) {
-                    cell.setGrainNumber(nextGrainType);
-                    nextState[i][j] = true;
+                Cell cell = getCell(i, j);
+                if (!cell.isAlive()) {
+                    int nextGrainType = checkNextGrainType(i, j);
+                    if (nextGrainType != -1) {
+                        cell.setGrainNumber(nextGrainType);
+                        nextState[i][j] = true;
+                    } else
+                        nextState[i][j] = false;
                 } else
-                    nextState[i][j] = false;
-            } else
-                nextState[i][j] = true;
-        });
+                    nextState[i][j] = true;
+            });
         });
         return nextState;
     }
 
     private int checkNextGrainType(int rowIndex, int columnIndex) {
         List<Cell> collect = getNeighbours(rowIndex, columnIndex).stream()
-        .filter(Cell::isAlive).collect(Collectors.toList());
+                .filter(Cell::isAlive).collect(Collectors.toList());
         if (collect.size() > 0) {
             Map<Integer, Integer> map = new HashMap<>();
             for (Cell cell : collect) {
@@ -133,16 +136,15 @@ public class Grid {
             }
             case Pentagonal_Random: {
                 int pentagonalRandom = generator.nextInt(4);
-
                 switch (pentagonalRandom) {
                     case 0:
-                    return pentagonalLeft(north, east, south, west, columnIndex, rowIndex);
+                        return pentagonalLeft(north, east, south, west, columnIndex, rowIndex);
                     case 1:
-                    return pentagonalRight(north, east, south, west, columnIndex, rowIndex);
+                        return pentagonalRight(north, east, south, west, columnIndex, rowIndex);
                     case 2:
-                    return pentagonalUp(north, east, south, west, columnIndex, rowIndex);
+                        return pentagonalUp(north, east, south, west, columnIndex, rowIndex);
                     case 3:
-                    return pentagonalDown(north, east, south, west, columnIndex, rowIndex);
+                        return pentagonalDown(north, east, south, west, columnIndex, rowIndex);
                 }
             }
             case Hexagonal_Left: {
@@ -156,88 +158,137 @@ public class Grid {
 
                 switch (hexagonalRandom) {
                     case 0:
-                    return hexagonalLeft(north, east, south, west, columnIndex, rowIndex);
+                        return hexagonalLeft(north, east, south, west, columnIndex, rowIndex);
                     case 1:
-                    return hexagonalRight(north, east, south, west, columnIndex, rowIndex);
+                        return hexagonalRight(north, east, south, west, columnIndex, rowIndex);
                 }
             }
 
             default:
-            return Arrays.asList();
-
+                return Arrays.asList();
         }
-
-
     }
 
-    public void nextMonteCarlo() {
+    public void nextMonteCarlo(double kt) {
         for (int i = 0; i < getNumberOfRows(); i++) {
             for (int j = 0; j < getNumberOfColumns(); j++) {
-            Cell cell = getCell(i, j);
-            List<Cell> neighbours = getNeighbours(i, j);
-            List<Cell> neighboursFiltered = neighbours.stream().filter(c -> c.getGrainNumber() != cell.getGrainNumber()).collect(Collectors.toList());
-            List<Integer> neighboursNumbers = neighboursFiltered.stream().filter(c -> c.getGrainNumber() != 0).map(c -> c.getGrainNumber()).collect(Collectors.toList());
-            if (neighboursNumbers.size() > 1) {
-                long energyBefore = neighboursFiltered.size();
-                int newNumber = neighboursNumbers.get(generator.nextInt(neighboursNumbers.size()));
-                long energyAfter = neighbours.stream().filter(c -> newNumber != c.getGrainNumber()).count();
-                boolean changed = cell.isChanged();
-                cell.setEnergy(energyBefore - energyAfter);
-                if (cell.getEnergy() >= 0) {
-                    cell.setChanged(true);
-                    cell.setGrainNumber(newNumber);
+                int ri=generator.nextInt(getNumberOfRows());
+                int rj=generator.nextInt(getNumberOfColumns());
+                Cell cell = getCell(ri, rj);
+                List<Cell> neighbours = getNeighbours(ri, rj);
+                List<Cell> neighboursFiltered = neighbours.stream().filter(c -> c.getGrainNumber() != cell.getGrainNumber()).collect(Collectors.toList());
+                List<Integer> neighboursNumbers = neighboursFiltered.stream().filter(c -> c.getGrainNumber() != 0).map(Cell::getGrainNumber).collect(Collectors.toList());
+                if (neighboursNumbers.size() > 1) {
+                    long energyBefore = neighboursFiltered.size();
+                    int newNumber = neighboursNumbers.get(generator.nextInt(neighboursNumbers.size()));
+                    long energyAfter = neighbours.stream().filter(c -> newNumber != c.getGrainNumber()).count();
+                    cell.setEnergy(energyAfter - energyBefore);
+                    if (cell.getEnergy() <= 0) {
+                        cell.setChanged(true);
+                        borderCells.add(cell);
+                        cell.setGrainNumber(newNumber);
+                        cell.negateAlive();
+                    } else {
+                        double p = Math.exp(-cell.getEnergy() / kt);
+                        double percent = Math.random();
+                        if (percent < p) {
+                            cell.setChanged(true);
+                            borderCells.add(cell);
+                            cell.setGrainNumber(newNumber);
+                            cell.negateAlive();
+                        }
+                    }
+                } else {
+                    cell.setChanged(false);
+                    borderCells.remove(cell);
                     cell.negateAlive();
                 }
-
-            }else{
-                cell.setChanged(false);
-                cell.negateAlive();
             }
         }
-        }
-        //   for (int i = 0; i < getNumberOfRows(); i++)
-        //       for (int j = 0; j < getNumberOfColumns(); j++) {
-        //           getCell(i, j).negateAlive();
-        //      }
     }
-
-    private List<Cell> radiusWithCenterOfGravity(int columnIndex, int rowIndex) {
-        List<Cell> neighbours = new LinkedList<>();
-        Cell cell;
-        for (double x = rowIndex - radiusNeighborhood; x <= rowIndex + radiusNeighborhood; x++) {
-            for (double y = columnIndex - radiusNeighborhood; y <= columnIndex + radiusNeighborhood; y++) {
-
-            cell = getCell((int) x, (int) y);
-            if (cell.isAlive()) {
-                double lineLength = calculateLineLengthCG(rowIndex, columnIndex, (int) x, (int) y);
-                if (lineLength <= radiusNeighborhood) {
-                    neighbours.add(cell);
+    public void nextDRX() {
+        double deltaRo = dislocation[drxIteration] - dislocation[(drxIteration++) - 1];
+        double averageRo = Math.abs(deltaRo / (numberOfColumns * numberOfRows));
+        double percentOfRo = DRXConsts.DISTRIBUTION_PERCENT.getValue$growth() * averageRo;
+        double criticalRo = DRXConsts.CRITICAL_RO.getValue$growth() /(numberOfColumns * numberOfRows);
+        for (int i = 0; i < numberOfRows; i++) {
+            for (int j = 0; j < numberOfColumns; j++) {
+                getCell(i, j).addDensity(percentOfRo);
+                deltaRo -= percentOfRo;
+            }
+        }
+        percentOfRo = deltaRo/100;
+        while (deltaRo >= 0) {
+            Cell cell;
+            double percent = Math.random();
+            if(percent < 0.8){
+                cell = borderCells.get(generator.nextInt(borderCells.size()));
+            }else {
+                while(true) {
+                    int n = generator.nextInt(numberOfRows);
+                    int m = generator.nextInt(numberOfColumns);
+                    cell = getCell(n, m);
+                    if (borderCells.contains(cell)) {
+                        continue;
+                    }
+                    break;
                 }
             }
+            deltaRo -= percentOfRo;
+            cell.addDensity(percentOfRo);
+        }
+        for (int i = 0; i < numberOfRows; i++) {
+            for (int j = 0; j < numberOfColumns; j++) {
+                Cell cell = getCell(i, j);
+                if (cell.getDensity() > criticalRo && cell.isChanged()) {
+                    cell.setCrystalized(true);
+                    cell.setDensity(0);
+                    cell.negateAlive();
+                }
+            }
+        }
 
+
+        if(drxIteration >= dislocation.length){
+            try(FileWriter csvWriter = new FileWriter("new.csv")){
+                saveDislocationToFile(csvWriter);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        }
-        return neighbours;
+
+
     }
 
-    private double calculateLineLengthCG(int x1, int y1, int x2, int y2) {
-        int row = (x2 + getNumberOfRows()) % getNumberOfRows();
-        int column = (y2 + getNumberOfColumns()) % getNumberOfColumns();
-        Cell cell2 = getCell(row, column);
-        Cell cell = getCell(x1, y1);
-        double length;
-        double xCenter = cell2.getCenterOfGravityX();
-        double yCenter = cell2.getCenterOfGravityY();
-        if (column != y2) {
-            yCenter = yCenter - (int) yCenter + y2;
+    private void saveDislocationToFile(FileWriter csvWriter) throws IOException {
+        csvWriter.append("time");
+        csvWriter.append(";");
+        csvWriter.append("density");
+        csvWriter.append("\n");
+        int time = 0;
+        for(int i = 0; i < dislocation.length; i++){
+            csvWriter.append(time++ + ";" + dislocation[i]);
+            csvWriter.append("\n");
         }
-        if (row != x2) {
-            xCenter = xCenter - (int) xCenter + x2;
-        }
-        length = Math.sqrt(Math.abs((Math.pow(cell.getCenterOfGravityX() - xCenter, 2) +
-                Math.pow(cell.getCenterOfGravityY() - yCenter, 2))));
-        return length;
+        csvWriter.flush();
     }
+
+
+
+
+    public void calculateDislocation(int iterations) {
+        final double A = DRXConsts.A.getValue$growth();
+        final double B = DRXConsts.B.getValue$growth();
+        dislocation = new double[iterations+1];
+        dislocation[0] = 1;
+        int i = 1;
+        for (double t = 0.001; t < (iterations+1) / 1000.0; t += 0.001) {
+            dislocation[i++] = A/B+((1.0 - (A / B))*Math.exp(-B*t));
+        }
+    }
+
+
+
 
     private List<Cell> hexagonalRight(int north, int east, int south, int west, int columnIndex, int rowIndex) {
         return Arrays.asList(
@@ -333,54 +384,16 @@ public class Grid {
             int counter = 1;
             for (int i = 0; i < homogeneousRows; i++) {
                 for (int j = 0; j < homogeneousColumns; j++) {
-                cells[rowStep * i + rowStep / 2][columnStep * j + columnStep / 2].setGrainNumber(counter++);
-                cells[rowStep * i + rowStep / 2][columnStep * j + columnStep / 2].negateAlive();
-            }
+                    cells[rowStep * i + rowStep / 2][columnStep * j + columnStep / 2].setGrainNumber(counter++);
+                    cells[rowStep * i + rowStep / 2][columnStep * j + columnStep / 2].negateAlive();
+                }
             }
 
         }
 
     }
 
-    public void setGrainsWithRadius(int numberOfGrains, Text errorText) {
-        int failedCounter = 0;
-        int number = 0;
-        boolean valid = true;
-        for (int i = 1; i <= numberOfGrains; i++) {
-            int x1 = generator.nextInt(numberOfRows);
-            int y1 = generator.nextInt(numberOfColumns);
-            if (!cells[x1][y1].isAlive()) {
-                for (double x = x1 - radiusNucleation; x <= x1 + radiusNucleation; x++) {
-                    for (double y = y1 - radiusNucleation; y <= y1 + radiusNucleation; y++) {
-                    if (x >= 0 && x < numberOfRows && y >= 0 && y <
-                            numberOfColumns && Math.sqrt(Math.abs(Math.pow((x - x1) * (x - x1), 2) +
-                                    Math.pow((y - y1) * (y - y1), 2))) <= radiusNucleation) {
-                        if (getCell((int) x, (int) y).isAlive()) {
-                            valid = false;
-                            break;
-                        }
-                    }
-                }
-                }
-                if (!valid) {
-                    i--;
-                    failedCounter++;
-                } else {
-                    number++;
-                    failedCounter = 0;
-                    cells[x1][y1].setGrainNumber(i);
-                    cells[x1][y1].negateAlive();
-                }
-            } else {
-                i--;
-                failedCounter++;
-            }
 
-            if (failedCounter == 10000) break;
-        }
-        if(numberOfGrains != number)
-            errorText.setText("Wygenerowano: " + number + " zarodkow");
-    }
 
     public boolean setColorIdOnClick(int ii, int jj) {
         if (nucleationType.equals(NucleationType.Custom)) {
@@ -408,14 +421,14 @@ public class Grid {
     public Cell getCell(int rowIndex, int columnIndex) {
         switch (boundaryCondition) {
             case Absorbing:
-            if (rowIndex < 0 || rowIndex >= numberOfRows || columnIndex < 0 || columnIndex >= numberOfColumns)
-                return new Cell(0, 0);
-            else
-            return cells[rowIndex][columnIndex];
+                if (rowIndex < 0 || rowIndex >= numberOfRows || columnIndex < 0 || columnIndex >= numberOfColumns)
+                    return new Cell(0, 0);
+                else
+                    return cells[rowIndex][columnIndex];
             case Periodic:
-            return cells[getPeriodicRow(rowIndex)][getPeriodicColumn(columnIndex)];
+                return cells[getPeriodicRow(rowIndex)][getPeriodicColumn(columnIndex)];
             default:
-            return null;
+                return null;
 
         }
 
@@ -452,7 +465,20 @@ public class Grid {
     public void setNucleationType(NucleationType nucleationType) {
         this.nucleationType = nucleationType;
     }
-    public Cell[][] getCells(){
+
+    public Cell[][] getCells() {
         return cells;
     }
+
+    public void clearDislocation() {
+        for(int i = 0 ; i < numberOfRows; i++){
+            for(int j = 0; j < numberOfColumns; j++){
+                getCell(i,j).setDensity(0);
+                getCell(i,j).setCrystalized(false);
+                getCell(i,j).negateAlive();
+                drxIteration = 1;
+            }
+        }
+    }
 }
+
